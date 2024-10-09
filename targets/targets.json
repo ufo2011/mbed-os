@@ -1503,6 +1503,18 @@
             "STM32F103xE"
         ]
     },
+    "MCU_STM32F103xD": {
+        "inherits": [
+            "MCU_STM32F1"
+        ],
+        "public": false,
+        "extra_labels_add": [
+            "STM32F103xD"
+        ],
+        "macros_add": [
+            "STM32F103xE"
+        ]
+    },
     "MCU_STM32F103xE": {
         "inherits": [
             "MCU_STM32F1"
@@ -1526,6 +1538,21 @@
             "ANALOGOUT",
             "SD",
             "PWM"
+        ]
+    },
+    "MCU_STM32F103xG": {
+        "inherits": [
+            "MCU_STM32F1"
+        ],
+        "public": false,
+        "extra_labels_add": [
+            "STM32F103xG"
+        ],
+        "macros_add": [
+            "STM32F103xG"
+        ],
+        "device_has_add": [
+            "MPU"
         ]
     },
     "MCU_STM32F2": {
@@ -2991,7 +3018,8 @@
             "MPU",
             "SERIAL_ASYNCH",
             "TRNG",
-            "CAN"
+            "CAN",
+            "CRC"
         ]
     },
     "MCU_STM32G431xB": {
@@ -3176,6 +3204,15 @@
             "i2c_timing_value_algo": {
                 "help": "If value was set to true I2C timing algorithm is enabled. Enabling may leads to performance issue. Keeping this false and changing system clock will trigger assert.)",
                 "value": false
+            },
+            "enable-overdrive-mode": {
+                "help": "Enable 'overdrive mode' (also known as VOS0) and raise core clock to the maximum value.  Only supported when the internal LDO is used for core voltage source.  Reduces the temperature range of the chip, see datasheet for details.",
+                "value": 1
+            },
+            "hse_value": {
+                "help": "Frequency in MHz of external oscillator / crystal.  Will be used to compute PLL parameters.",
+                "value": "8000000",
+                "macro_name": "HSE_VALUE"
             }
         },
         "components_add": [
@@ -3204,15 +3241,15 @@
         "public": false,
         "core": "Cortex-M7FD",
         "extra_labels_add": [
-            "STM32H723xG"
+            "STM32H723xG",
+            "STM32H7_550MHZ"
         ],
         "macros_add": [
             "MBED_SPLIT_HEAP",
             "STM32H723xx"
         ],
         "overrides": {
-            "system_power_supply": "PWR_LDO_SUPPLY",
-            "i2c_timing_value_algo": true
+            "system_power_supply": "PWR_LDO_SUPPLY"
         }
     },
     "MCU_STM32H725xE": {
@@ -3226,7 +3263,8 @@
         "mbed_ram_start": "0x24000000",
         "mbed_ram_size": "0x50000",
         "extra_labels_add": [
-            "STM32H725xE"
+            "STM32H725xE",
+            "STM32H7_550MHZ"
         ],
         "macros_add": [
             "STM32H725xx"
@@ -3246,7 +3284,8 @@
         "mbed_ram_start": "0x24000000",
         "mbed_ram_size": "0x50000",
         "extra_labels_add": [
-            "STM32H735xG"
+            "STM32H735xG",
+            "STM32H7_550MHZ"
         ],
         "macros_add": [
             "STM32H735xx"
@@ -3262,7 +3301,8 @@
         "public": false,
         "core": "Cortex-M7FD",
         "extra_labels_add": [
-            "STM32H743xI"
+            "STM32H743xI",
+            "STM32H7_480MHZ"
         ],
         "macros_add": [
             "STM32H743xx"
@@ -3280,11 +3320,6 @@
                 "help": "Value: PB_5 for the default board configuration, PA_7 in case of solder bridge update (SB33 on/ SB35 off)",
                 "value": "PB_5",
                 "macro_name": "STM32_D11_SPI_ETHERNET_PIN"
-            },
-            "hse_value": {
-                "help": "HSE default value is 25MHz in HAL",
-                "value": "8000000",
-                "macro_name": "HSE_VALUE"
             }
         },
         "device_has_add": [
@@ -3313,11 +3348,6 @@
             "STM32H723ZG"
         ],
         "config": {
-            "hse_value": {
-                "help": "HSE default value is 25MHz in HAL",
-                "value": "8000000",
-                "macro_name": "HSE_VALUE"
-            },
             "d11_configuration": {
                 "help": "Value: PB_5 for the default board configuration, PA_7 in case of solder bridge update (SB33 on/ SB35 off)",
                 "value": "PB_5",
@@ -3351,13 +3381,15 @@
         ],
         "public": false,
         "extra_labels_add": [
-            "STM32H745xI"
+            "STM32H745xI",
+            "STM32H7_480MHZ"
         ],
         "macros_add": [
             "STM32H745xx"
         ],
         "overrides": {
-            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY"
+            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY",
+            "enable-overdrive-mode": 0
         }
     },
     "MCU_STM32H745xI_CM4": {
@@ -3394,19 +3426,80 @@
             "CORE_CM7"
         ]
     },
+    "NUCLEO_H745ZI_Q_CM7": {
+        "inherits": [
+            "MCU_STM32H745xI_CM7"
+        ],
+        "extra_labels_add": [ "NUCLEO_H745ZI_Q" ],
+        "supported_form_factors": [
+            "ARDUINO_UNO"
+        ],
+        "config": {
+            "d11_configuration": {
+                "help": "Value: PB_5 for the default board configuration, PA_7 in case of solder bridge update (SB33 on/ SB35 off)",
+                "value": "PB_5",
+                "macro_name": "STM32_D11_SPI_ETHERNET_PIN"
+            },
+            "usb_speed": {
+                "help": "USE_USB_OTG_FS or USE_USB_OTG_HS or USE_USB_HS_IN_FS",
+                "value": "USE_USB_OTG_FS"
+            }
+        },
+        "device_has_add": [
+            "USBDEVICE"
+        ],
+        "overrides": {
+            "network-default-interface-type": "ETHERNET"
+        },
+        "device_name": "STM32H745ZITx"
+    },
+    "NUCLEO_H745ZI_Q_CM4": {
+        "inherits": [
+            "MCU_STM32H745xI_CM4"
+        ],
+        "extra_labels_add": [ "NUCLEO_H745ZI_Q" ],
+        "supported_form_factors": [
+            "ARDUINO_UNO"
+        ],
+        "config": {
+            "d11_configuration": {
+                "help": "Value: PB_5 for the default board configuration, PA_7 in case of solder bridge update (SB33 on/ SB35 off)",
+                "value": "PB_5",
+                "macro_name": "STM32_D11_SPI_ETHERNET_PIN"
+            },
+            "usb_speed": {
+                "help": "USE_USB_OTG_FS or USE_USB_OTG_HS or USE_USB_HS_IN_FS",
+                "value": "USE_USB_OTG_FS"
+            }
+        },
+        "device_has_add": [
+            "USBDEVICE"
+        ],
+        "overrides": {
+            "network-default-interface-type": "ETHERNET"
+        },
+        "device_name": "STM32H745ZITx"
+    },
+    "NUCLEO_H745ZI_Q" : {
+        "inherits" : [
+            "NUCLEO_H745ZI_Q_CM7"
+        ]
+    },
     "MCU_STM32H747xI": {
         "inherits": [
             "MCU_STM32H7"
         ],
         "public": false,
         "extra_labels_add": [
-            "STM32H747xI"
+            "STM32H747xI",
+            "STM32H7_480MHZ"
         ],
         "macros_add": [
             "STM32H747xx"
         ],
         "overrides": {
-            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY"
+            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY",
+            "enable-overdrive-mode": 0
         }
     },
     "MCU_STM32H747xI_CM7": {
@@ -3498,11 +3591,6 @@
         "public": false,
         "inherits": ["MCU_STM32H747xI"],
         "config": {
-            "hse_value": {
-                "help": "HSE default value is 25MHz in HAL",
-                "value": "25000000",
-                "macro_name": "HSE_VALUE"
-            },
             "lse_bypass": {
                 "help": "1 to use an oscillator (not a crystal) on 32k LSE",
                 "value": "1"
@@ -3541,7 +3629,9 @@
             "lse_available": 1,
             "lpticker_delay_ticks": 0,
             "network-default-interface-type": "ETHERNET",
-            "i2c_timing_value_algo": true
+            "i2c_timing_value_algo": true,
+            "hse_value": 25000000,
+            "enable-overdrive-mode": 1
         },
         "device_name": "STM32H747XIHx"
     },
@@ -3604,7 +3694,8 @@
         "public": false,
         "core": "Cortex-M7FD",
         "extra_labels_add": [
-            "STM32H753xI"
+            "STM32H753xI",
+            "STM32H7_480MHZ"
         ],
         "macros_add": [
             "STM32H753xx"
@@ -3624,25 +3715,21 @@
         "mbed_ram_start": "0x24000000",
         "mbed_ram_size": "0x100000",
         "extra_labels_add": [
-            "STM32H7A3xIQ"
+            "STM32H7A3xIQ",
+            "STM32H7_280MHZ"
         ],
         "macros_add": [
             "STM32H7A3xxQ"
         ],
         "overrides": {
-            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY"
+            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY",
+            "enable-overdrive-mode": 0
         }
     },
     "NUCLEO_H7A3ZI_Q": {
         "inherits": [
             "MCU_STM32H7A3xIQ"
         ],
-        "config": {
-            "hse_value": {
-                "value": "8000000",
-                "macro_name": "HSE_VALUE"
-            }
-        },
         "supported_form_factors": [
             "ARDUINO_UNO"
         ],
@@ -3662,13 +3749,15 @@
         "mbed_ram_start": "0x24000000",
         "mbed_ram_size": "0x100000",
         "extra_labels_add": [
-            "STM32H7B3xIQ"
+            "STM32H7B3xIQ",
+            "STM32H7_280MHZ"
         ],
         "macros_add": [
             "STM32H7B3xxQ"
         ],
         "overrides": {
-            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY"
+            "system_power_supply": "PWR_DIRECT_SMPS_SUPPLY",
+            "enable-overdrive-mode": 0
         }
     },
     "MCU_STM32L0": {
@@ -3923,6 +4012,16 @@
         "device_name": "STM32L151CCTx",
         "detect_code": [
             "0350"
+        ]
+    },
+    "XDOT_MAX32670": {
+        "inherits": [
+            "MAX32670"
+        ],
+        "device_name": "MAX32670",
+        "bootloader_supported": true,
+        "detect_code": [
+            "0351"
         ]
     },
     "FF1705_L151CC": {
@@ -7082,6 +7181,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             }
         },
         "inherits": [
@@ -7196,6 +7298,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             }
         },
         "inherits": [
@@ -7317,6 +7422,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCLKSEL_1, GPIO_DBCLKSEL_2, GPIO_DBCLKSEL_4, ..., or GPIO_DBCLKSEL_32768",
                 "value": "GPIO_DBCLKSEL_16"
+            },
+            "adc-smplcnt-list": {
+                "help": "For ADC, comma separated {pin, value} list to extend sampling time in ADC clocks on per-pin basis. Value must be in the range [0, 15]."
             },
             "clock-pll": {
                 "help": "Choose clock source to clock PLL: NU_HXT_PLL or NU_HIRC_PLL",
@@ -7457,6 +7565,9 @@
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
             },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
+            },
             "exclude-uno-spi-from-fpga-ci-test-shield-test": {
                 "help": "Exclude UNO SPI pins (D8/D9/D10/D11/D12/D13) from FPGA CI Test Shield test for wiring to on-board SPI flash",
                 "options": [false, true],
@@ -7513,6 +7624,7 @@
             "MPU",
             "WATCHDOG",
             "RESET_REASON",
+            "CAN",
             "EMAC",
             "USBDEVICE"
         ],
@@ -7591,7 +7703,8 @@
         "is_disk_virtual": true,
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM"
+            "GCC_ARM",
+            "IAR"
         ],
         "config": {
             "hxt-present": {
@@ -7647,6 +7760,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             },
             "usb-device-hsusbd": {
                 "help": "Select high-speed USB device or not",
@@ -7714,6 +7830,9 @@
             "gcc_arm": [
                 "std",
                 "small"
+            ],
+            "iar": [
+                "std"
             ]
         },
         "supported_application_profiles": [
@@ -8011,6 +8130,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             }
         },
         "overrides": {
@@ -8157,6 +8279,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             },
             "hxt-enable": {
                 "help": "Enable external high-speed crystal (HXT)",
@@ -9103,6 +9228,9 @@
             "gpio-irq-debounce-sample-rate": {
                 "help": "Select GPIO IRQ debounce sample rate: GPIO_DBCTL_DBCLKSEL_1, GPIO_DBCTL_DBCLKSEL_2, GPIO_DBCTL_DBCLKSEL_4, ..., or GPIO_DBCTL_DBCLKSEL_32768",
                 "value": "GPIO_DBCTL_DBCLKSEL_16"
+            },
+            "eadc-extsmpt-list": {
+                "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
             }
         },
         "inherits": [

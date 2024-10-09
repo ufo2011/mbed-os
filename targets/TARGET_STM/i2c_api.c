@@ -535,6 +535,8 @@ void i2c_init_internal(i2c_t *obj, const i2c_pinmap_t *pinmap)
     obj_s->slave = 0;
     obj_s->pending_slave_tx_master_rx = 0;
     obj_s->pending_slave_rx_maxter_tx = 0;
+    obj_s->slave_tx_transfer_in_progress = 0;
+    obj_s->slave_rx_transfer_in_progress = 0;
 #endif
 
     obj_s->event = 0;
@@ -893,7 +895,7 @@ int i2c_byte_write(i2c_t *obj, int data)
  * Return whether the given state is a state where we can start a new I2C transaction with the
  * STM32 HAL.
  */
-inline bool i2c_is_ready_for_transaction_start(stm_i2c_state state)
+bool i2c_is_ready_for_transaction_start(stm_i2c_state state)
 {
     // Note: We can safely send a transaction start in the middle of any single byte operation; this creates a
     // repeated start.
@@ -931,21 +933,17 @@ static void prep_for_restart_if_needed(struct i2c_s *obj_s) {
  * STOP at the end of the current transaction.
  */
 static uint32_t get_hal_xfer_options(struct i2c_s *obj_s, bool stop) {
-    if (obj_s->state == STM_I2C_SB_READ_IN_PROGRESS || obj_s->state == STM_I2C_SB_WRITE_IN_PROGRESS) {
-        if(stop) {
-            // Generate restart condition and stop at end
-            return I2C_OTHER_AND_LAST_FRAME;
-        } else {
-            // Generate restart condition but don't send STOP
-            return I2C_OTHER_FRAME;
-        }
+    (void)obj_s;
+
+    // Note: The naming used by STM32 HAL is quite counterintuitive.  "OTHER_FRAME" means "always send a
+    // start/restart condition at the start of the frame".  In contrast, "FIRST_FRAME" means "don't send
+    // a start/restart if the previous transfer was going the same direction".
+    if(stop) {
+        // Generate start condition and stop at end
+        return I2C_OTHER_AND_LAST_FRAME;
     } else {
-        if(stop) {
-            // Generate start condition and stop at end
-            return I2C_FIRST_AND_LAST_FRAME;
-        } else {
-            return I2C_LAST_FRAME;
-        }
+        // Generate only the start condition
+        return I2C_OTHER_FRAME;
     }
 }
 
@@ -1577,6 +1575,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
     i2c_t *obj = get_i2c_obj(I2cHandle);
     struct i2c_s *obj_s = I2C_S(obj);
     obj_s->pending_slave_tx_master_rx = 0;
+    obj_s->slave_tx_transfer_in_progress = 0;
 }
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
@@ -1591,9 +1590,11 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
             HAL_I2C_Slave_Seq_Receive_IT(I2cHandle, &(obj_s->slave_rx_buffer[obj_s->slave_rx_count]), 1, I2C_NEXT_FRAME);
         } else {
             obj_s->pending_slave_rx_maxter_tx = 0;
+            obj_s->slave_rx_transfer_in_progress = 0;
         }
     } else {
         obj_s->pending_slave_rx_maxter_tx = 0;
+        obj_s->slave_rx_transfer_in_progress = 0;
     }
 }
 
@@ -1647,12 +1648,13 @@ int i2c_slave_read(i2c_t *obj, char *data, int length)
         _length = length;
     }
 
+    obj_s->slave_rx_transfer_in_progress = 1;
     /*  Always use I2C_NEXT_FRAME as slave will just adapt to master requests */
     ret = HAL_I2C_Slave_Seq_Receive_IT(handle, (uint8_t *) data, _length, I2C_NEXT_FRAME);
 
     if (ret == HAL_OK) {
         timeout = BYTE_TIMEOUT_US * (_length + 1);
-        while (obj_s->pending_slave_rx_maxter_tx && (--timeout != 0)) {
+        while (obj_s->slave_rx_transfer_in_progress && (--timeout != 0)) {
             wait_us(1);
         }
 
@@ -1677,12 +1679,13 @@ int i2c_slave_write(i2c_t *obj, const char *data, int length)
     int ret = 0;
     uint32_t timeout = 0;
 
+    obj_s->slave_tx_transfer_in_progress = 1;
     /*  Always use I2C_NEXT_FRAME as slave will just adapt to master requests */
     ret = HAL_I2C_Slave_Seq_Transmit_IT(handle, (uint8_t *) data, length, I2C_NEXT_FRAME);
 
     if (ret == HAL_OK) {
         timeout = BYTE_TIMEOUT_US * (length + 1);
-        while (obj_s->pending_slave_tx_master_rx && (--timeout != 0)) {
+        while (obj_s->slave_tx_transfer_in_progress && (--timeout != 0)) {
             wait_us(1);
         }
 
@@ -2173,6 +2176,25 @@ uint32_t i2c_get_timing(I2CName i2c, uint32_t current_timing, int current_hz,
                 }
                 break;
 #endif
+#if defined (I2C_PCLK_100M)
+            case I2C_PCLK_100M:
+                switch (hz) {
+                    case 100000:
+                        tim = TIMING_VAL_100M_CLK_100KHZ;
+                        break;
+                    case 400000:
+                        tim = TIMING_VAL_100M_CLK_400KHZ;
+                        break;
+                    case 1000000:
+                        tim = TIMING_VAL_100M_CLK_1MHZ;
+                        break;
+                    default:
+                        MBED_ASSERT((hz == 100000) || (hz == 400000) || \
+                                    (hz == 1000000));
+                        break;
+                }
+                break;
+#endif
 #if defined (I2C_PCLK_110M)
             case I2C_PCLK_110M:
                 switch (hz) {
@@ -2192,6 +2214,25 @@ uint32_t i2c_get_timing(I2CName i2c, uint32_t current_timing, int current_hz,
                 }
                 break;
 #endif
+#if defined (I2C_PCLK_112M5)
+            case I2C_PCLK_112M5:
+                switch (hz) {
+                    case 100000:
+                        tim = TIMING_VAL_112M5_CLK_100KHZ;
+                        break;
+                    case 400000:
+                        tim = TIMING_VAL_112M5_CLK_400KHZ;
+                        break;
+                    case 1000000:
+                        tim = TIMING_VAL_112M5_CLK_1MHZ;
+                        break;
+                    default:
+                        MBED_ASSERT((hz == 100000) || (hz == 400000) || \
+                                    (hz == 1000000));
+                        break;
+                }
+                break;
+#endif
 #if defined (I2C_PCLK_120M)
             case I2C_PCLK_120M:
                 switch (hz) {
@@ -2203,6 +2244,44 @@ uint32_t i2c_get_timing(I2CName i2c, uint32_t current_timing, int current_hz,
                         break;
                     case 1000000:
                         tim = TIMING_VAL_120M_CLK_1MHZ;
+                        break;
+                    default:
+                        MBED_ASSERT((hz == 100000) || (hz == 400000) || \
+                                    (hz == 1000000));
+                        break;
+                }
+                break;
+#endif
+#if defined (I2C_PCLK_137M5)
+            case I2C_PCLK_137M5:
+                switch (hz) {
+                    case 100000:
+                        tim = TIMING_VAL_137M5_CLK_100KHZ;
+                        break;
+                    case 400000:
+                        tim = TIMING_VAL_137M5_CLK_400KHZ;
+                        break;
+                    case 1000000:
+                        tim = TIMING_VAL_137M5_CLK_1MHZ;
+                        break;
+                    default:
+                        MBED_ASSERT((hz == 100000) || (hz == 400000) || \
+                                    (hz == 1000000));
+                        break;
+                }
+                break;
+#endif
+#if defined (I2C_PCLK_140M)
+            case I2C_PCLK_140M:
+                switch (hz) {
+                    case 100000:
+                        tim = TIMING_VAL_140M_CLK_100KHZ;
+                        break;
+                    case 400000:
+                        tim = TIMING_VAL_140M_CLK_400KHZ;
+                        break;
+                    case 1000000:
+                        tim = TIMING_VAL_140M_CLK_1MHZ;
                         break;
                     default:
                         MBED_ASSERT((hz == 100000) || (hz == 400000) || \
